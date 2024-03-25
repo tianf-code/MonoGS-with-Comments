@@ -24,23 +24,26 @@ from utils.slam_frontend import FrontEnd
 
 class SLAM:
     def __init__(self, config, save_dir=None):
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
+        start = torch.cuda.Event(enable_timing=True)    # Create a CUDA event to record the start time
+        end = torch.cuda.Event(enable_timing=True)  # Create a CUDA event to record the end time
 
-        start.record()
+        start.record()  # Record start time
 
         self.config = config
         self.save_dir = save_dir
-        model_params = munchify(config["model_params"])
-        opt_params = munchify(config["opt_params"])
-        pipeline_params = munchify(config["pipeline_params"])
+
+        # 3DGS parameters
+        model_params = munchify(config["model_params"]) # model parameters
+        opt_params = munchify(config["opt_params"]) # optimization parameters
+        pipeline_params = munchify(config["pipeline_params"])   # pipeline parameters
         self.model_params, self.opt_params, self.pipeline_params = (
             model_params,
             opt_params,
             pipeline_params,
         )
 
-        self.live_mode = self.config["Dataset"]["type"] == "realsense"
+        # SLAM parameters
+        self.live_mode = self.config["Dataset"]["type"] == "realsense"  # if use realsense, then it's live mode
         self.monocular = self.config["Dataset"]["sensor_type"] == "monocular"
         self.use_spherical_harmonics = self.config["Training"]["spherical_harmonics"]
         self.use_gui = self.config["Results"]["use_gui"]
@@ -48,8 +51,9 @@ class SLAM:
             self.use_gui = True
         self.eval_rendering = self.config["Results"]["eval_rendering"]
 
-        model_params.sh_degree = 3 if self.use_spherical_harmonics else 0
+        model_params.sh_degree = 3 if self.use_spherical_harmonics else 0   # sh parameters
 
+        # Initialize 3D Gaussian Splatting Model
         self.gaussians = GaussianModel(model_params.sh_degree, config=self.config)
         self.gaussians.init_lr(6.0)
         self.dataset = load_dataset(
@@ -254,7 +258,7 @@ if __name__ == "__main__":
 
     slam = SLAM(config, save_dir=save_dir)  # Initialize the SLAM instance, pass the configuration and save_dir path.
 
-    slam.run()
+    slam.run()  # In fact, all SLAM processes are completed in init(), and run() has no real role
     wandb.finish()
 
     # All done
