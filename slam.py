@@ -201,12 +201,12 @@ class SLAM:
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
-    parser.add_argument("--config", type=str)
-    parser.add_argument("--eval", action="store_true")
+    parser.add_argument("--config", type=str)   # Load the config file
+    parser.add_argument("--eval", action="store_true")  # Load the evaluation parameter (whether to run in evaluation mode)
 
     args = parser.parse_args(sys.argv[1:])
 
-    mp.set_start_method("spawn")
+    mp.set_start_method("spawn")    # start a method with torch.multiprocessing
 
     with open(args.config, "r") as yml:
         config = yaml.safe_load(yml)
@@ -214,42 +214,45 @@ if __name__ == "__main__":
     config = load_config(args.config)
     save_dir = None
 
-    if args.eval:
+    if args.eval:   # If the --eval argument is passed
         Log("Running MonoGS in Evaluation Mode")
         Log("Following config will be overriden")
         Log("\tsave_results=True")
-        config["Results"]["save_results"] = True
+        config["Results"]["save_results"] = True    # Results will be saved
         Log("\tuse_gui=False")
         config["Results"]["use_gui"] = False
         Log("\teval_rendering=True")
-        config["Results"]["eval_rendering"] = True
+        config["Results"]["eval_rendering"] = True  # Set to True to perform rendering assessment
         Log("\tuse_wandb=True")
         config["Results"]["use_wandb"] = True
 
     if config["Results"]["save_results"]:
-        mkdir_p(config["Results"]["save_dir"])
-        current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        path = config["Dataset"]["dataset_path"].split("/")
-        save_dir = os.path.join(
+        mkdir_p(config["Results"]["save_dir"])  # Create a directory to save results, the path is in the config file
+        current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") # Get the current date and time
+        path = config["Dataset"]["dataset_path"].split("/") # Split the dataset path by "/"
+        save_dir = os.path.join( # Joint the dataset path with the current time as the directory for saving results.
             config["Results"]["save_dir"], path[-3] + "_" + path[-2], current_datetime
         )
         tmp = args.config
-        tmp = tmp.split(".")[0]
-        config["Results"]["save_dir"] = save_dir
-        mkdir_p(save_dir)
+        tmp = tmp.split(".")[0] # Remove the extension from the filename (args.config)
+        config["Results"]["save_dir"] = save_dir    # Update the directory path in configs for saving results
+        mkdir_p(save_dir)   # Make the directory to save results
         with open(os.path.join(save_dir, "config.yml"), "w") as file:
             documents = yaml.dump(config, file)
         Log("saving results in " + save_dir)
+
+        # Initialize WandB (Weights and Biases) environment to track experiment results.
         run = wandb.init(
             project="MonoGS",
             name=f"{tmp}_{current_datetime}",
             config=config,
             mode=None if config["Results"]["use_wandb"] else "disabled",
         )
+        # Two metrics are defined to track the progress of the experiment on WandB.
         wandb.define_metric("frame_idx")
         wandb.define_metric("ate*", step_metric="frame_idx")
 
-    slam = SLAM(config, save_dir=save_dir)
+    slam = SLAM(config, save_dir=save_dir)  # Initialize the SLAM instance, pass the configuration and save_dir path.
 
     slam.run()
     wandb.finish()

@@ -14,3 +14,4 @@ wandb
 lpips
 rich
 ruff
+matplotlib==3.5.3
