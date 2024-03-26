@@ -70,6 +70,7 @@ class SLAM:
         frontend_queue = mp.Queue()
         backend_queue = mp.Queue()
 
+        # Create two GUI multi-process queues
         # According to whether to use the GUI, choose to use mp.Queue() or FakeQueue() to create a fake queue object
         # If the program needs to communicate with the GUI process, use a real multi-process queue;
         # Use a fake queue if not required to avoid throwing exceptions without a GUI.
@@ -217,12 +218,19 @@ class SLAM:
 
         # End backend and GUI process
         backend_queue.put(["stop"])
-        backend_process.join()  # Wait for background process to complete
-        Log("Backend stopped and joined the main thread")
+        # ******************** by tf ********************
+        while not frontend_queue.empty():   # Empty frontend queue
+            frontend_queue.get()
+        Log("Frontend and backend cleaned up")
+        # while not backend_queue.empty():   # Empty backend queue
+        #     backend_queue.get()
+        # ***********************************************
         if self.use_gui:
             q_main2vis.put(gui_utils.GaussianPacket(finish=True))
             gui_process.join()
             Log("GUI Stopped and joined the main thread")
+        backend_process.join()  # Wait for background process to complete
+        Log("Backend stopped and joined the main thread")
 
     # Fake function
     def run(self):
@@ -237,7 +245,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    mp.set_start_method("spawn")    # start a method with torch.multiprocessing
+    mp.set_start_method("forkserver")    # start a method with torch.multiprocessing
 
     with open(args.config, "r") as yml:
         config = yaml.safe_load(yml)
