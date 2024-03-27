@@ -115,7 +115,8 @@ class FrontEnd(mp.Process):
         self.current_window = []
         # remove everything from the queues
         while not self.backend_queue.empty():
-            self.backend_queue.get()
+            x = self.backend_queue.get()
+            del x
 
         # Initialise the frame at the ground truth pose
         viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
@@ -336,6 +337,9 @@ class FrontEnd(mp.Process):
             else:
                 data_vis2main = self.q_vis2main.get()
                 self.pause = data_vis2main.flag_pause
+                # by tf
+                del data_vis2main
+                #
                 if self.pause:
                     self.backend_queue.put(["pause"])
                     continue
@@ -358,7 +362,6 @@ class FrontEnd(mp.Process):
                             self.gaussians, self.save_dir, "final", final=True
                         )
                     # ******************** by tf ********************
-                    Log("SLAM finished", tag="Frontend")
                     Log("Closing frontend", tag="Frontend")
                     # ***********************************************
                     break
@@ -498,14 +501,19 @@ class FrontEnd(mp.Process):
                 elif data[0] == "stop":
                     # ******************** by tf ********************
                     while not self.backend_queue.empty():
-                        self.backend_queue.get()
+                        x = self.backend_queue.get()
+                        del x
                     while not self.frontend_queue.empty():
-                        self.frontend_queue.get()
+                        x = self.frontend_queue.get()
+                        del x
                     while not self.q_main2vis.empty():
-                        self.q_main2vis.get()
+                        x = self.q_main2vis.get()
+                        del x
                     while not self.q_vis2main.empty():
-                        self.q_vis2main.get()
+                        x = self.q_vis2main.get()
+                        del x
                     Log("Received terminate signal", tag="Frontend")
                     Log("Closing frontend", tag="Frontend")
+                    del data
                     # ***********************************************
                     break

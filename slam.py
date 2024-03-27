@@ -131,6 +131,7 @@ class SLAM:
 
         # SLAM ends, record end time
         end.record()
+        Log("Frontend stopped")
 
         # Evaluation
         torch.cuda.synchronize()    # Synchronize the CPU and GPU to ensure that calculations on the GPU are completed
@@ -179,7 +180,8 @@ class SLAM:
             # Then, prepare to evalute the rendering results after optimization
             # re-used the frontend queue to retrive the gaussians from the backend.
             while not frontend_queue.empty():   # Empty frontend queue
-                frontend_queue.get()
+                x = frontend_queue.get()
+                del x
             backend_queue.put(["color_refinement"])
 
             # Wait in an infinite loop to obtain synchronized signal from the front-end queue
@@ -192,6 +194,7 @@ class SLAM:
                 if data[0] == "sync_backend" and frontend_queue.empty():
                     gaussians = data[1]
                     self.gaussians = gaussians  # Get optimized Gaussians
+                    del data
                     break
 
             # Evaluate rendering results (After optimization)
@@ -238,7 +241,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    mp.set_start_method("forkserver")    # start a method with torch.multiprocessing
+    mp.set_start_method("spawn")    # start a method with torch.multiprocessing
 
     with open(args.config, "r") as yml:
         config = yaml.safe_load(yml)

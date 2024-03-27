@@ -450,9 +450,11 @@ class SLAM_GUI:
             Log("Received terminate signal", tag="GUI")
             # clean up the pipe
             while not self.q_main2vis.empty():
-                self.q_main2vis.get()
+                x = self.q_main2vis.get()
+                del x
             while not self.q_vis2main.empty():
-                self.q_vis2main.get()
+                x = self.q_vis2main.get()
+                del x
             self.q_vis2main = None
             self.q_main2vis = None
             self.process_finished = True
