@@ -266,7 +266,7 @@ if __name__ == "__main__":
         current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") # Get the current date and time
         path = config["Dataset"]["dataset_path"].split("/") # Split the dataset path by "/"
         save_dir = os.path.join( # Joint the dataset path with the current time as the directory for saving results.
-            config["Results"]["save_dir"], path[-3] + "_" + path[-2], current_datetime
+            config["Results"]["save_dir"], path[-2], current_datetime
         )
         tmp = args.config
         tmp = tmp.split(".")[0] # Remove the extension from the filename (args.config)
