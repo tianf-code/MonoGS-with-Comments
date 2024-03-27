@@ -25,10 +25,6 @@ class BackEnd(mp.Process):
         self.frontend_queue = None
         self.backend_queue = None
         self.live_mode = False
-
-        # ******************** by tf ********************
-        self.stop = False
-        # ***********************************************
         self.pause = False
         self.device = "cuda"
         self.dtype = torch.float32
@@ -370,10 +366,6 @@ class BackEnd(mp.Process):
     def run(self):
         while True:
             if self.backend_queue.empty():
-                # ******************** by tf ********************
-                if self.stop:
-                    break
-                # ***********************************************
                 if self.pause:
                     time.sleep(0.01)
                     continue
@@ -392,7 +384,6 @@ class BackEnd(mp.Process):
                 data = self.backend_queue.get()
                 if data[0] == "stop":
                     # ******************** by tf ********************
-                    self.stop = True
                     Log("Received terminate signal", tag="Backend")
                     Log("Closing backend", tag="Backend")
                     # ***********************************************

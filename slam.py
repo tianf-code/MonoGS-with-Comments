@@ -217,17 +217,6 @@ class SLAM:
             save_gaussians(self.gaussians, self.save_dir, "final_after_opt", final=True)    # Save optimized Gaussians
 
         # End backend and GUI process
-        # ******************** by tf ********************
-        frontend_queue.put(["stop"])
-        while not frontend_queue.empty():   # Empty frontend queue
-            print(frontend_queue.get())
-        while not backend_queue.empty():   # Empty backend queue
-            print(backend_queue.get())
-        while not q_main2vis.empty():
-            print(q_main2vis.get())
-        while not q_vis2main.empty():
-            print(q_vis2main.get())
-        # ***********************************************
         backend_queue.put(["stop"])
         backend_process.join()  # Wait for background process to complete
         Log("Backend stopped and joined the main thread")
