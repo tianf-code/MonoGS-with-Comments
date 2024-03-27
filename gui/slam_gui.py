@@ -668,7 +668,7 @@ class SLAM_GUI:
             self.step += 1
             if self.process_finished:
                 o3d.visualization.gui.Application.instance.quit()
-                Log("Closing Visualization", tag="GUI")
+                Log("Closing visualization", tag="GUI")
                 break
 
             def update():

@@ -492,5 +492,18 @@ class FrontEnd(mp.Process):
                     self.requested_init = False
 
                 elif data[0] == "stop":
-                    Log("Frontend Stopped.")
+                    Log("Received terminate signal", tag="Frontend")
+                    Log("Closing frontend", tag="Frontend")
                     break
+
+        # ******************** by tf ********************
+        while not self.backend_queue.empty():
+            self.backend_queue.get()
+        while not self.frontend_queue.empty():
+            self.frontend_queue.get()
+        while not self.q_main2vis.empty():
+            self.q_main2vis.get()
+        while not self.q_vis2main.empty():
+            self.q_vis2main.get()
+        return
+        # ***********************************************

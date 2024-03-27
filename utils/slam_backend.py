@@ -303,7 +303,7 @@ class BackEnd(mp.Process):
                 if (self.iteration_count % self.gaussian_reset) == 0 and (
                     not update_gaussian
                 ):
-                    Log("Resetting the opacity of non-visible Gaussians")
+                    Log("Resetting the opacity of non-visible Gaussians", tag="Backend")
                     self.gaussians.reset_opacity_nonvisible(visibility_filter_acm)
                     gaussian_split = True
 
@@ -393,7 +393,8 @@ class BackEnd(mp.Process):
                 if data[0] == "stop":
                     # ******************** by tf ********************
                     self.stop = True
-                    Log("Backend stopped")
+                    Log("Received terminate signal", tag="Backend")
+                    Log("Closing backend", tag="Backend")
                     # ***********************************************
                     break
                 elif data[0] == "pause":
@@ -487,6 +488,7 @@ class BackEnd(mp.Process):
                     self.push_to_frontend("keyframe")
                 else:
                     raise Exception("Unprocessed data", data)
+
         while not self.backend_queue.empty():
             self.backend_queue.get()
         while not self.frontend_queue.empty():
