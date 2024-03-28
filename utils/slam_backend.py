@@ -80,8 +80,7 @@ class BackEnd(mp.Process):
         self.gaussians.prune_points(self.gaussians.unique_kfIDs >= 0)
         # remove everything from the queues
         while not self.backend_queue.empty():
-            x = self.backend_queue.get()
-            del x
+            self.backend_queue.get()
 
     def initialize_map(self, cur_frame_idx, viewpoint):
         for mapping_iteration in range(self.init_itr_num):
@@ -387,7 +386,6 @@ class BackEnd(mp.Process):
                     # ******************** by tf ********************
                     Log("Received terminate signal", tag="Backend")
                     Log("Closing backend", tag="Backend")
-                    # del data
                     # ***********************************************
                     break
                 elif data[0] == "pause":
@@ -484,11 +482,6 @@ class BackEnd(mp.Process):
 
         while not self.backend_queue.empty():
             self.backend_queue.get()
-            # ******************** by tf ********************
-            # del x
-            # ***********************************************
         while not self.frontend_queue.empty():
             self.frontend_queue.get()
-            # ******************** by tf ********************
-            # del x
-            # ***********************************************
+        return

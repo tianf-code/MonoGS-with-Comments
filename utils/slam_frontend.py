@@ -115,8 +115,7 @@ class FrontEnd(mp.Process):
         self.current_window = []
         # remove everything from the queues
         while not self.backend_queue.empty():
-            x = self.backend_queue.get()
-            del x
+            self.backend_queue.get()
 
         # Initialise the frame at the ground truth pose
         viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
@@ -337,9 +336,6 @@ class FrontEnd(mp.Process):
             else:
                 data_vis2main = self.q_vis2main.get()
                 self.pause = data_vis2main.flag_pause
-                # by tf
-                del data_vis2main
-                #
                 if self.pause:
                     self.backend_queue.put(["pause"])
                     continue
@@ -501,19 +497,14 @@ class FrontEnd(mp.Process):
                 elif data[0] == "stop":
                     # ******************** by tf ********************
                     while not self.backend_queue.empty():
-                        x = self.backend_queue.get()
-                        del x
+                        self.backend_queue.get()
                     while not self.frontend_queue.empty():
-                        x = self.frontend_queue.get()
-                        del x
+                        self.frontend_queue.get()
                     while not self.q_main2vis.empty():
-                        x = self.q_main2vis.get()
-                        del x
+                        self.q_main2vis.get()
                     while not self.q_vis2main.empty():
-                        x = self.q_vis2main.get()
-                        del x
+                        self.q_vis2main.get()
                     Log("Received terminate signal", tag="Frontend")
                     Log("Closing frontend", tag="Frontend")
-                    del data
                     # ***********************************************
                     break

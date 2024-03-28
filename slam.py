@@ -135,7 +135,6 @@ class SLAM:
 
         # Evaluation
         torch.cuda.synchronize()    # Synchronize the CPU and GPU to ensure that calculations on the GPU are completed
-        # empty the frontend queue
         N_frames = len(self.frontend.cameras)   # Number of camera frames processed by the front end
         FPS = N_frames / (start.elapsed_time(end) * 0.001)  # Calculate the frame rate.
         Log("Total time", start.elapsed_time(end) * 0.001, tag="Eval")
@@ -180,8 +179,7 @@ class SLAM:
             # Then, prepare to evalute the rendering results after optimization
             # re-used the frontend queue to retrive the gaussians from the backend.
             while not frontend_queue.empty():   # Empty frontend queue
-                x = frontend_queue.get()
-                del x
+                frontend_queue.get()
             backend_queue.put(["color_refinement"])
 
             # Wait in an infinite loop to obtain synchronized signal from the front-end queue
@@ -194,7 +192,6 @@ class SLAM:
                 if data[0] == "sync_backend" and frontend_queue.empty():
                     gaussians = data[1]
                     self.gaussians = gaussians  # Get optimized Gaussians
-                    del data
                     break
 
             # Evaluate rendering results (After optimization)
