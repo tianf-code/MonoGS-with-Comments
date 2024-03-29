@@ -217,14 +217,16 @@ class SLAM:
             save_gaussians(self.gaussians, self.save_dir, "final_after_opt", final=True)    # Save optimized Gaussians
 
         # End backend and GUI process
-        if self.use_gui:
-            q_main2vis.put(gui_utils.GaussianPacket(finish=True))
-            # q_vis2main.put(gui_utils.GaussianPacket(finish=True))
-            gui_process.join()
-            Log("GUI Stopped and joined the main thread")
         backend_queue.put(["stop"])
         backend_process.join()  # Wait for background process to complete
         Log("Backend stopped and joined the main thread")
+        if self.use_gui:
+            q_main2vis.put(gui_utils.GaussianPacket(finish=True))
+            gui_process.join()
+            Log("GUI Stopped and joined the main thread")
+
+        while True:
+            continue
 
     # Fake function
     def run(self):
