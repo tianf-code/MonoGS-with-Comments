@@ -125,7 +125,6 @@ class SLAM:
             time.sleep(5)
         backend_process.start() # Start the backend
 
-
         self.frontend.run() # Start the frontend
         backend_queue.put(["pause"])
 
