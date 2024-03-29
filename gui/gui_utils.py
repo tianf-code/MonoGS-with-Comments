@@ -149,6 +149,7 @@ def get_latest_queue(q):
             if message is not None:
                 del message
             message = message_latest
+            del message_latest
         except queue.Empty:
             if q.qsize() < 1:
                 break

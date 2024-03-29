@@ -479,7 +479,6 @@ class BackEnd(mp.Process):
                     self.push_to_frontend("keyframe")
                 else:
                     raise Exception("Unprocessed data", data)
-
         while not self.backend_queue.empty():
             self.backend_queue.get()
         while not self.frontend_queue.empty():
