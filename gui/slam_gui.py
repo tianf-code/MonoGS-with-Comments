@@ -456,9 +456,6 @@ class SLAM_GUI:
             self.q_vis2main = None
             self.q_main2vis = None
             self.process_finished = True
-        # by tf
-        del gaussian_packet
-        #
 
     @staticmethod
     def depth_to_normal(points, k=3, d_min=1e-3, d_max=10.0):
@@ -682,7 +679,6 @@ class SLAM_GUI:
                     self.step = 0
 
             gui.Application.instance.post_to_main_thread(self.window, update)
-        return
 
 
 def run(params_gui=None):
