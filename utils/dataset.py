@@ -255,6 +255,9 @@ class MonocularDataset(BaseDataset):
     def __getitem__(self, idx):
         color_path = self.color_paths[idx]
         pose = self.poses[idx]
+        # Note that self.color_paths and self.poses have not been defined here.
+        # They are defined in the specific class below, so they cannot be called directly.
+        # __getitem__ has also been rewritten in RealsenseDataset class.
 
         image = np.array(Image.open(color_path))
         depth = None
