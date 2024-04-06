@@ -104,22 +104,25 @@ class Camera(nn.Module):
         ).squeeze(0)
 
     @property
-    def camera_center(self):
+    def camera_center(self):    # Position of the camera center in world coordinate system
         return self.world_view_transform.inverse()[3, :3]
 
     def update_RT(self, R, t):
         self.R = R.to(device=self.device)
         self.T = t.to(device=self.device)
 
-    def compute_grad_mask(self, config):
+    def compute_grad_mask(self, config):    # Find edges in image
         edge_threshold = config["Training"]["edge_threshold"]
 
+        # Convert original image to grayscale image. The mean function is used here to average all channels,
+        # dim=0 means averaging the channel dimensions, and keepdim=True maintains the number of dimensions.
         gray_img = self.original_image.mean(dim=0, keepdim=True)
-        gray_grad_v, gray_grad_h = image_gradient(gray_img)
-        mask_v, mask_h = image_gradient_mask(gray_img)
+        gray_grad_v, gray_grad_h = image_gradient(gray_img) # Calculate the vertical and horizontal gradients of the grayscale image
+        mask_v, mask_h = image_gradient_mask(gray_img)  # # Generate vertical and horizontal gradient masks based on grayscale images.
+        # The mask filters out parts of the image that do not need to be considered when calculating gradients, such as image edges.
         gray_grad_v = gray_grad_v * mask_v
         gray_grad_h = gray_grad_h * mask_h
-        img_grad_intensity = torch.sqrt(gray_grad_v**2 + gray_grad_h**2)
+        img_grad_intensity = torch.sqrt(gray_grad_v**2 + gray_grad_h**2)    # Calculate intensity of the gradient
 
         if config["Dataset"]["type"] == "replica":
             row, col = 32, 32
