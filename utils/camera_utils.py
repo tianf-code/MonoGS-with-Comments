@@ -124,6 +124,9 @@ class Camera(nn.Module):
         gray_grad_h = gray_grad_h * mask_h
         img_grad_intensity = torch.sqrt(gray_grad_v**2 + gray_grad_h**2)    # Calculate intensity of the gradient
 
+        # If the dataset type is "replica", split the image into blocks and calculate the median gradient strength for each block.
+        # Then according to the median and threshold multiplier, the part with gradient strength greater than the threshold is set to 1,
+        # otherwise it is set to 0. The purpose of this is to improve processing speed. Replica has a higher resolution than other data sets.
         if config["Dataset"]["type"] == "replica":
             row, col = 32, 32
             multiplier = edge_threshold
@@ -139,6 +142,9 @@ class Camera(nn.Module):
                     block[block > (th_median * multiplier)] = 1
                     block[block <= (th_median * multiplier)] = 0
             self.grad_mask = img_grad_intensity
+
+        # If it is not a "replica" type of data set, directly calculate the median gradient intensity of the entire image,
+        # and set the part where the gradient intensity is greater than the threshold to 1, otherwise it is 0.
         else:
             median_img_grad_intensity = img_grad_intensity.median()
             self.grad_mask = (
