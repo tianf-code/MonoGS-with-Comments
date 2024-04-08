@@ -65,7 +65,7 @@ class BackEnd(mp.Process):
         )
 
     def add_next_kf(self, frame_idx, viewpoint, init=False, scale=2.0, depth_map=None):
-        self.gaussians.extend_from_pcd_seq(
+        self.gaussians.extend_from_pcd_seq( # Extend Gaussian models from point cloud sequence
             viewpoint, kf_id=frame_idx, init=init, scale=scale, depthmap=depth_map
         )
 
@@ -86,7 +86,8 @@ class BackEnd(mp.Process):
     def initialize_map(self, cur_frame_idx, viewpoint):
         for mapping_iteration in range(self.init_itr_num):
             self.iteration_count += 1
-            render_pkg = render(
+            # *
+            render_pkg = render(    # create an initial map
                 viewpoint, self.gaussians, self.pipeline_params, self.background
             )
             (
@@ -143,10 +144,13 @@ class BackEnd(mp.Process):
         if len(current_window) == 0:
             return
 
+        # According to the keyframe index in the current window, obtain the corresponding information from self.viewpoints
+        # and store them in viewpoint_stack. It's a stack data structure.
         viewpoint_stack = [self.viewpoints[kf_idx] for kf_idx in current_window]
         random_viewpoint_stack = []
         frames_to_optimize = self.config["Training"]["pose_window"]
 
+        # Traverse all views, if the view is not in the current window, add it to random_viewpoint_stack.
         current_window_set = set(current_window)
         for cam_idx, viewpoint in self.viewpoints.items():
             if cam_idx in current_window_set:
@@ -165,10 +169,11 @@ class BackEnd(mp.Process):
 
             keyframes_opt = []
 
+            # Traverse all keyframes in the current window and do mapping for each frame
             for cam_idx in range(len(current_window)):
                 viewpoint = viewpoint_stack[cam_idx]
                 keyframes_opt.append(viewpoint)
-                render_pkg = render(
+                render_pkg = render(    # Render the scene
                     viewpoint, self.gaussians, self.pipeline_params, self.background
                 )
                 (
@@ -197,8 +202,10 @@ class BackEnd(mp.Process):
                 radii_acm.append(radii)
                 n_touched_acm.append(n_touched)
 
+            # Traverse 2 random frames in random_viewpoint_stack
             for cam_idx in torch.randperm(len(random_viewpoint_stack))[:2]:
                 viewpoint = random_viewpoint_stack[cam_idx]
+                # *
                 render_pkg = render(
                     viewpoint, self.gaussians, self.pipeline_params, self.background
                 )
@@ -229,7 +236,8 @@ class BackEnd(mp.Process):
             scaling = self.gaussians.get_scaling
             isotropic_loss = torch.abs(scaling - scaling.mean(dim=1).view(-1, 1))
             loss_mapping += 10 * isotropic_loss.mean()
-            loss_mapping.backward()
+            loss_mapping.backward() # Optimize mapping parameters
+
             gaussian_split = False
             ## Deinsifying / Pruning Gaussians
             with torch.no_grad():
@@ -327,6 +335,7 @@ class BackEnd(mp.Process):
                 random.randint(0, len(viewpoint_idx_stack) - 1)
             )
             viewpoint_cam = self.viewpoints[viewpoint_cam_idx]
+            # *
             render_pkg = render(
                 viewpoint_cam, self.gaussians, self.pipeline_params, self.background
             )

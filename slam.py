@@ -10,7 +10,7 @@ import yaml
 from munch import munchify
 
 import wandb
-from gaussian_splatting.scene.gaussian_model import GaussianModel
+from gaussian_splatting.scene.gaussian_model import GaussianModel   # *
 from gaussian_splatting.utils.system_utils import mkdir_p
 from gui import gui_utils, slam_gui
 from utils.config_utils import load_config
@@ -54,6 +54,7 @@ class SLAM:
         model_params.sh_degree = 3 if self.use_spherical_harmonics else 0   # sh parameters
 
         # Initialize 3D Gaussian Splatting Model
+        # *
         self.gaussians = GaussianModel(model_params.sh_degree, config=self.config)
         self.gaussians.init_lr(6.0)
 
@@ -106,7 +107,6 @@ class SLAM:
         self.backend.frontend_queue = frontend_queue
         self.backend.backend_queue = backend_queue
         self.backend.live_mode = self.live_mode
-
         self.backend.set_hyperparams()
 
         self.params_gui = gui_utils.ParamsGUI(

@@ -164,6 +164,7 @@ class FrontEnd(mp.Process):
 
         pose_optimizer = torch.optim.Adam(opt_params)   # optimizer
         for tracking_itr in range(self.tracking_itr_num):
+            # *
             render_pkg = render(
                 viewpoint, self.gaussians, self.pipeline_params, self.background
             )   # obtain renderd maps or renderd images
@@ -345,9 +346,9 @@ class FrontEnd(mp.Process):
                 else:
                     self.backend_queue.put(["unpause"])
 
-            if self.frontend_queue.empty():
+            if self.frontend_queue.empty(): # If frontend queue is empty, then process and tracking; otherwise sync with backend
                 tic.record()
-                if cur_frame_idx >= len(self.dataset):
+                if cur_frame_idx >= len(self.dataset):  # If the index of the current frame is greater than the length of the data set, i.e. traversal is complete
                     if self.save_results:
                         eval_ate(
                             self.cameras,
@@ -377,7 +378,7 @@ class FrontEnd(mp.Process):
                     time.sleep(0.01)
                     continue
 
-                viewpoint = Camera.init_from_dataset(
+                viewpoint = Camera.init_from_dataset(   # Get the viewpoint of the current frame from the dataset
                     self.dataset, cur_frame_idx, projection_matrix
                 )
                 viewpoint.compute_grad_mask(self.config)
@@ -415,6 +416,9 @@ class FrontEnd(mp.Process):
                     cur_frame_idx += 1
                     continue
 
+                # If self.initialized has been set to true (that is, has been initialized), then its value will remain unchanged;
+                # if self.initialized has not been set to true, but the number of frames in the current window is equal to the
+                # specified window size, then it will The value is set to true.
                 last_keyframe_idx = self.current_window[0]
                 check_time = (cur_frame_idx - last_keyframe_idx) >= self.kf_interval
                 curr_visibility = (render_pkg["n_touched"] > 0).long()
