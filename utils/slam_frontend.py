@@ -56,19 +56,22 @@ class FrontEnd(mp.Process):
 
     def add_new_keyframe(self, cur_frame_idx, depth=None, opacity=None, init=False):
         rgb_boundary_threshold = self.config["Training"]["rgb_boundary_threshold"]
-        self.kf_indices.append(cur_frame_idx)
-        viewpoint = self.cameras[cur_frame_idx]
+        self.kf_indices.append(cur_frame_idx)   # Add the current frame index to the keyframe index list
+        viewpoint = self.cameras[cur_frame_idx] # Viewpoint information of the current frame.
         gt_img = viewpoint.original_image.cuda()
-        valid_rgb = (gt_img.sum(dim=0) > rgb_boundary_threshold)[None]
+        valid_rgb = (gt_img.sum(dim=0) > rgb_boundary_threshold)[None]  # Calculate the sum of RGB pixel values in the image,
+                                                                        # and then compare it with the RGB boundary threshold
+                                                                        # to obtain the effective RGB pixel value.
+                                                                        # But why?
         if self.monocular:
-            if depth is None:
+            if depth is None:   # If no depth given, initialize the depth to a fixed value (2) and add some noise
                 initial_depth = 2 * torch.ones(1, gt_img.shape[1], gt_img.shape[2])
                 initial_depth += torch.randn_like(initial_depth) * 0.3
-            else:
+            else:   # if depth given
                 depth = depth.detach().clone()
                 opacity = opacity.detach()
                 use_inv_depth = False
-                if use_inv_depth:
+                if use_inv_depth:   # Ignore
                     inv_depth = 1.0 / depth
                     inv_median_depth, inv_std, valid_mask = get_median_depth(
                         inv_depth, opacity, mask=valid_rgb, return_std=True
@@ -85,17 +88,17 @@ class FrontEnd(mp.Process):
                         inv_depth
                     ) * torch.where(invalid_depth_mask, inv_std * 0.5, inv_std * 0.2)
                     initial_depth = 1.0 / inv_initial_depth
-                else:
+                else:   # Default
                     median_depth, std, valid_mask = get_median_depth(
                         depth, opacity, mask=valid_rgb, return_std=True
                     )
-                    invalid_depth_mask = torch.logical_or(
+                    invalid_depth_mask = torch.logical_or(  # Ignore depths that are too far and too close
                         depth > median_depth + std, depth < median_depth - std
                     )
-                    invalid_depth_mask = torch.logical_or(
+                    invalid_depth_mask = torch.logical_or(  # Combined with invalid rgb to get the final invalid mask
                         invalid_depth_mask, ~valid_mask
                     )
-                    depth[invalid_depth_mask] = median_depth
+                    depth[invalid_depth_mask] = median_depth    # Set the position of invalid to median
                     initial_depth = depth + torch.randn_like(depth) * torch.where(
                         invalid_depth_mask, std * 0.5, std * 0.2
                     )
@@ -108,62 +111,62 @@ class FrontEnd(mp.Process):
         return initial_depth[0].numpy()
 
     def initialize(self, cur_frame_idx, viewpoint):
-        self.initialized = not self.monocular
-        self.kf_indices = []
-        self.iteration_count = 0
-        self.occ_aware_visibility = {}
-        self.current_window = []
-        # remove everything from the queues
+        self.initialized = not self.monocular # If the system is not monocular, set the initialization state to True, otherwise False.
+        self.kf_indices = [] # Initialize the keyframe index list as empty.
+        self.iteration_count = 0 # Initialize the iteration counter to 0.
+        self.occ_aware_visibility = {} # Initialize an empty dictionary to store visibility information for each keyframe.
+        self.current_window = [] # Initialize the current window as empty, which is used to track a series of keyframes.
+        # remove everything from the queues (backend)
         while not self.backend_queue.empty():
             self.backend_queue.get()
 
-        # Initialise the frame at the ground truth pose
+        # Initialise the frame at the ground truth pose (only initial frame)
         viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
 
         self.kf_indices = []
-        depth_map = self.add_new_keyframe(cur_frame_idx, init=True)
-        self.request_init(cur_frame_idx, viewpoint, depth_map)
+        depth_map = self.add_new_keyframe(cur_frame_idx, init=True) # Add the keyframe and generate a depth map.
+        self.request_init(cur_frame_idx, viewpoint, depth_map)  # Request initialization to the backend, pass the current frame index, viewpoint and depth map.
         self.reset = False
 
     def tracking(self, cur_frame_idx, viewpoint):
-        prev = self.cameras[cur_frame_idx - self.use_every_n_frames]
-        viewpoint.update_RT(prev.R, prev.T)
+        prev = self.cameras[cur_frame_idx - self.use_every_n_frames]    # Take camera information of the previous every_n frame as a reference
+        viewpoint.update_RT(prev.R, prev.T) # Use the pose of the previous frame to initialize the camera pose of the current frame
 
-        opt_params = []
+        opt_params = [] # optimize parameters, camera poses
         opt_params.append(
             {
-                "params": [viewpoint.cam_rot_delta],
+                "params": [viewpoint.cam_rot_delta],    # rotation delta
                 "lr": self.config["Training"]["lr"]["cam_rot_delta"],
                 "name": "rot_{}".format(viewpoint.uid),
             }
         )
         opt_params.append(
             {
-                "params": [viewpoint.cam_trans_delta],
+                "params": [viewpoint.cam_trans_delta],  # translation delta
                 "lr": self.config["Training"]["lr"]["cam_trans_delta"],
                 "name": "trans_{}".format(viewpoint.uid),
             }
         )
         opt_params.append(
             {
-                "params": [viewpoint.exposure_a],
+                "params": [viewpoint.exposure_a],   # ?
                 "lr": 0.01,
                 "name": "exposure_a_{}".format(viewpoint.uid),
             }
         )
         opt_params.append(
             {
-                "params": [viewpoint.exposure_b],
+                "params": [viewpoint.exposure_b],   # ?
                 "lr": 0.01,
                 "name": "exposure_b_{}".format(viewpoint.uid),
             }
         )
 
-        pose_optimizer = torch.optim.Adam(opt_params)
+        pose_optimizer = torch.optim.Adam(opt_params)   # optimizer
         for tracking_itr in range(self.tracking_itr_num):
             render_pkg = render(
                 viewpoint, self.gaussians, self.pipeline_params, self.background
-            )
+            )   # obtain renderd maps or renderd images
             image, depth, opacity = (
                 render_pkg["render"],
                 render_pkg["depth"],
@@ -179,13 +182,13 @@ class FrontEnd(mp.Process):
                 pose_optimizer.step()
                 converged = update_pose(viewpoint)
 
-            if tracking_itr % 10 == 0:
+            if tracking_itr % 10 == 0:  # every ten iterations
                 self.q_main2vis.put(
                     gui_utils.GaussianPacket(
                         current_frame=viewpoint,
                         gtcolor=viewpoint.original_image,
                         gtdepth=viewpoint.depth
-                        if not self.monocular
+                        if not self.monocular   # if not monocular (depth module), then pass gt_depth, otherwise pass zeros
                         else np.zeros((viewpoint.image_height, viewpoint.image_width)),
                     )
                 )
@@ -299,7 +302,7 @@ class FrontEnd(mp.Process):
         self.backend_queue.put(msg)
         self.requested_init = True
 
-    def sync_backend(self, data):
+    def sync_backend(self, data):   # Sync with backends, including gaussians, keyframes...
         self.gaussians = data[1]
         occ_aware_visibility = data[2]
         keyframes = data[3]
@@ -358,7 +361,7 @@ class FrontEnd(mp.Process):
                             self.gaussians, self.save_dir, "final", final=True
                         )
                     # ******************** by tf ********************
-                    Log("Closing frontend", tag="Frontend")
+                    # Log("Closing frontend", tag="MonoGS")
                     # ***********************************************
                     break
 
@@ -435,7 +438,7 @@ class FrontEnd(mp.Process):
                     )
                 if self.single_thread:
                     create_kf = check_time and create_kf
-                if create_kf:
+                if create_kf:   # if current frame is a key frame
                     self.current_window, removed = self.add_to_window(
                         cur_frame_idx,
                         curr_visibility,

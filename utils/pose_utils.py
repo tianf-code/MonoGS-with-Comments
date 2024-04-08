@@ -73,7 +73,7 @@ def SE3_exp(tau):
     return T
 
 
-def update_pose(camera, converged_threshold=1e-4):
+def update_pose(camera, converged_threshold=1e-4):  # update camera pose, used when tracking to update camera pose
     tau = torch.cat([camera.cam_trans_delta, camera.cam_rot_delta], axis=0)
 
     T_w2c = torch.eye(4, device=tau.device)
